@@ -1,5 +1,9 @@
 <?php
 
+include_once './Models/Producto.php';
+include_once './Models/Estado.php';
+
+
 class Pedido{
 
     public $id;
@@ -98,6 +102,18 @@ class Pedido{
     }
 
 
+    public static function modificarEstado($pedido)
+    {
+        if($pedido->getEstado() == Estado::PREPARACION)
+        {   
+            $objAccesoDatos = DataAccess::getInstance();
+            $consulta = $objAccesoDatos->prepareQuery("UPDATE pedidos SET estado = :estado,  WHERE id = :id");
+            $consulta->bindValue(':estado', strtolower($obj->getEstado()), PDO::PARAM_STR);
+            $consulta->bindValue(':id', $obj->getId(), PDO::PARAM_INT);
+            $consulta->execute();
+
+        }
+    }
 
 
 

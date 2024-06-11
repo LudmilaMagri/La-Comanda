@@ -2,6 +2,10 @@
 
 
 include_once './Models/Pedido.php';
+include_once './Models/Producto.php';
+include_once './Models/Usuario.php';
+include_once './Models/PedidoProducto.php';
+include_once './Models/Mesa.php';
 include_once './interfaces/IApiUsable.php';
 
 class PedidoController implements IApiUsable{

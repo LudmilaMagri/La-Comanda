@@ -49,7 +49,7 @@ $app->group('/mesa', function(RouteCollectorProxy $group){
 });
 
 $app->group('/producto', function(RouteCollectorProxy $group){
-    $group->post('[/]', \ProductoController::class . ':Cargar');
+    $group->post('[/]', \ProductoController::class . ':Cargar') ->add(new AuthMiddleware(['socio']));
     $group->get('[/]', \ProductoController::class . ':TraerTodos');
     
 });
