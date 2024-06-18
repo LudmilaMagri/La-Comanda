@@ -3,7 +3,7 @@
     class Estado
     {
         //Estados de los pedidos
-        const PENDIENTE = 'pendiente';
+        const PEND = 'pendiente';
         const PREPARACION = 'en preparacion';
         const LISTO = 'listo para servir';
         const ENTREGADO = 'entregado';

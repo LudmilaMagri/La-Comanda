@@ -67,30 +67,58 @@ class Pedido{
     public function setCodigoMesa($mesa){
         $this->codigo_mesa = $mesa;
     }
-    public function setCodigoPedido($pedido){
-        $this->codigo_pedido = $pedido;
+    public function setCodigoPedido(){
+        $this->codigo_pedido = self::crearCodigoPedido();
     }
     public function setPrecioTotal($precio){
         $this->precio_total = $precio;
     }
 
 
+    public function crearCodigoPedido($longitud = 5)
+    {
+        $caracteres = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        $codigoPedido = '';
 
-    public function crearPedido()
+        $existeCodigo = true;
+        while ($existeCodigo) {
+            for ($i = 0; $i < $longitud; $i++) {
+                $codigoPedido .= $caracteres[rand(0, strlen($caracteres) - 1)];
+            }
+
+            $objAccesoDatos = AccesoDatos::obtenerInstancia();
+            $consulta = $objAccesoDatos->prepararConsulta("SELECT codigo_pedido FROM pedidos WHERE codigo_pedido = :codigoPedido");
+            $consulta->bindValue(':codigoPedido', $codigoPedido, PDO::PARAM_STR);
+            $consulta->execute();
+            $existeCodigo = $consulta->fetchObject('Pedido');
+
+            if ($existeCodigo === false) {
+                return $codigoPedido;
+            }
+        }
+        throw new Exception('No se pudo generar un código de pedido.');
+    }
+
+    
+    public static function crearPedido($pedido)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
         $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO pedidos (estado, tiempo, codigo_mesa, codigo_pedido, precio_total, nombre_cliente) 
                                                     VALUES (:estado, :tiempo, :codigo_mesa, :codigo_pedido, :precio_total, :nombre_cliente)");
-        $consulta->bindValue(':estado', $this->estado, PDO::PARAM_STR);
-        $consulta->bindValue(':tiempo', $this->tiempo, PDO::PARAM_STR);
-        $consulta->bindValue(':codigo_mesa', $this->codigo_mesa);
-        $consulta->bindValue(':codigo_pedido', $this->codigo_pedido);
-        $consulta->bindValue(':precio_total', $this->precio_total);
-        $consulta->bindValue(':nombre_cliente', $this->nombre_cliente, PDO::PARAM_STR);
+        $consulta->bindValue(':estado', $pedido->getEstado(), PDO::PARAM_STR);
+        $consulta->bindValue(':tiempo', $pedido->getTiempo());
+        $consulta->bindValue(':codigo_mesa', $pedido->getCodigoMesa());
+        $consulta->bindValue(':codigo_pedido', $pedido->getCodigoPedido());
+        $consulta->bindValue(':precio_total', $pedido->getPrecioTotal());
+        $consulta->bindValue(':nombre_cliente', $pedido->getNombreCliente(), PDO::PARAM_STR);
         $consulta->execute();
 
         return $objAccesoDatos->obtenerUltimoId();
     }
+
+
+
+  
 
     public static function obtenerTodos()
     {
@@ -102,19 +130,60 @@ class Pedido{
     }
 
 
+    public static function obtenerPorId($codigo_pedido)
+    {
+        $objAccesoDatos = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, estado, codigo_pedido FROM mesas WHERE codigo_pedido = :codigo_pedido");
+        $consulta->bindValue(':codigo_pedido', $codigo_pedido, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchObject('Pedido');
+    }
+
     public static function modificarEstado($pedido)
     {
         if($pedido->getEstado() == Estado::PREPARACION)
         {   
-            $objAccesoDatos = DataAccess::getInstance();
-            $consulta = $objAccesoDatos->prepareQuery("UPDATE pedidos SET estado = :estado,  WHERE id = :id");
-            $consulta->bindValue(':estado', strtolower($obj->getEstado()), PDO::PARAM_STR);
-            $consulta->bindValue(':id', $obj->getId(), PDO::PARAM_INT);
+            $objAccesoDatos = AccesoDatos::obtenerInstancia();
+            $consulta = $objAccesoDatos->prepararConsulta("UPDATE pedidos SET estado = :estado,  WHERE id = :id");
+            $consulta->bindValue(':estado', strtolower($pedido->getEstado()), PDO::PARAM_STR);
             $consulta->execute();
 
         }
     }
 
+    public static function obtenerPendientesPorRol($rol)
+    {
+        $sector = '';
+
+        switch ($rol) {
+            case 'bartender':
+                $sector = 'vinoteca';
+                break;
+            case 'cervecero':
+                $sector = 'cerveceria';
+                break;
+            case 'cocinero':
+                $sector = 'cocina';
+                break;
+            case 'candybar':
+                $sector = 'candybar';
+                break;            
+        }
+        $objAccesoDatos = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT codigo_pedido, id_producto, producto_estado, nombre_producto,
+                                                            P.sector, P.precio 
+                                                        FROM  pedidos_productos PD
+                                                        LEFT JOIN productos P ON P.id = PD.id_producto
+                                                        WHERE PD.producto_estado = 'pendiente' 
+                                                        AND P.sector = :sector");
+
+
+        $consulta->bindValue(':sector', $sector, PDO::PARAM_STR);
+        $consulta->execute();
+        $array = $consulta->fetchAll(PDO::FETCH_OBJ);
+        return $array;
+    }
 
 
 

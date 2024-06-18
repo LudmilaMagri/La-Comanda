@@ -1,59 +1,12 @@
 <?php
-use Psr\Http\Message\ServerRequestInterface as IRequest;
-use Psr\Http\Server\RequestHandlerInterface as IRequestHandler;
-use Slim\Handlers\Strategies\RequestHandler;
-use Slim\Psr7\Response;
-use Slim\Psr7\Response as ResponseClass;
 
 use Firebase\JWT\JWT;
 
 
+class AutentificadorJWT{
 
-class AuthMiddleware
-{
-
-
-    private static $claveSecreta = 'clavecomanda';
-    private static $tipoEncriptacion = ['HS256'];
-
-    private $_perfiles=array();
-
-    public function __construct($perfiles)
-    {
-        $this->_perfiles = $perfiles;
-    }
-
-    public function __invoke(IRequest $request, IRequestHandler $requestHandler)
-    {
-        $response = new ResponseClass();
-        echo "entro al authMW".PHP_EOL;
-
-        $params = $request->getQueryParams();
-
-
-        if(isset($params["credenciales"]))
-        {
-            $credenciales = $params ["credenciales"];
-
-            if(in_array($credenciales,$this->_perfiles))
-            {
-                $response = $requestHandler ->handle($request);
-            }
-            else
-            {
-                $response->getBody()->write(json_encode(array("error"=>"No es ". $this->_perfiles[0])));
-                
-            }
-        }
-        else
-        {
-            $response->getBody()->write(json_encode(array("error"=>"No hay credenciales")));
-
-        }
-        echo "salgo del authMW".PHP_EOL;
-        return $response->withHeader('Content-Type','application/json');    
-    }
-    
+    private static $claveSecreta = 'T3sT$JWT';
+    private static $tipoEncriptacion = ['HS256'];   
 
 
     public static function CrearToken($datos)
@@ -129,4 +82,13 @@ class AuthMiddleware
         return sha1($aud); //devuelve cadena de texto unica
     }
 
+
+
+
+
+
+
 }
+
+
+?>

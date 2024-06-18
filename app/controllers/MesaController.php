@@ -36,10 +36,12 @@ class MesaController implements IApiUsable{
           ->withHeader('Content-Type', 'application/json');
     }
 
+
+    
     public function TraerUno($request, $response, $args)
     {
         $id = $args['id'];
-        $mesa = Mesa::GetById($id);
+        $mesa = Mesa::obtenerPorId($id);
 
         if($mesa === false){
             $payload = json_encode("No se encontro la mesa");

@@ -3,10 +3,12 @@
 class PedidoProducto{
 
     public $id;
+    public $codigo_pedido;
     public $id_producto;
     public $id_usuario;
-    public $codigo_pedido;
     public $producto_estado;
+    public $nombre_producto;
+    public $tiempo_estimado;
 
     public function __construct(){}
 
@@ -24,8 +26,13 @@ class PedidoProducto{
     }
     public function getProductoEstado(){
         return $this->producto_estado;
+    } 
+    public function getNombreProducto(){
+        return $this->nombre_producto;
     }
-
+    public function getTiempoEstimado(){
+        return $this->tiempo_estimado;
+    }
 
     public function setId($id){
         $this->id = $id;
@@ -48,35 +55,44 @@ class PedidoProducto{
             exit();
         }
     }
+    public function setNombreProducto($nombreProducto){
+        $this->nombre_producto = $nombreProducto;
+    }
+    public function setTiempoEstimado($tiempoEstimado){
+        $this->tiempo_estimado = $tiempoEstimado;
+    }
 
     public static function ValidarEstado($estado){
-        if($estado != 'pendiente' && $estado != 'en preparacion' && $estado != 'listo para servir' && $estado != 'entregado'){
+        if($estado != Estado::PEND && $estado != Estado::PREPARACION && $estado != Estado::LISTO && $estado != Estado::ENTREGADO){
             return false;
         } 
         return true;
     } 
 
-    public function crearPedidoProducto()
+    public static function crearPedidoProducto($obj)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO pedidos_productos (codigo_pedido, id_producto, producto_estado) VALUES (:codigo_pedido, :id_producto, :producto_estado)");
-        $consulta->bindValue(':codigo_pedido', $this->codigo_pedido, PDO::PARAM_STR);
-        $consulta->bindValue(':id_producto', $this->id_producto, PDO::PARAM_INT);
-        $consulta->bindValue(':producto_estado', $this->producto_estado, PDO::PARAM_STR);
+        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO pedidos_productos (codigo_pedido, id_producto, producto_estado, nombre_producto) VALUES (:codigo_pedido, :id_producto, :producto_estado, :nombre_producto)");
+        $consulta->bindValue(':codigo_pedido', $obj->getCodigoPedido(), PDO::PARAM_STR);
+        $consulta->bindValue(':id_producto', $obj->getIdProducto(), PDO::PARAM_INT);
+        $consulta->bindValue(':producto_estado', $obj->getProductoEstado(), PDO::PARAM_STR);
+        $consulta->bindValue(':nombre_producto', $obj->getNombreProducto(), PDO::PARAM_STR);
 
         $consulta->execute();
 
         //return $objAccesoDatos->obtenerUltimoId();
     }
-    public static function modificarPedidoProducto()
+
+    
+    public static function modificar($obj)
     {
         $objAccesoDato = AccesoDatos::obtenerInstancia();
         $consulta = $objAccesoDato->prepararConsulta("UPDATE pedidos_productos SET producto_estado = :producto_estado, codigo_pedido = :codigo_pedido, id_usuario = :id_usuario, 
                                                     id_producto = :id_producto WHERE id = :id");
-        $consulta->bindValue(':producto_estado', $this->producto_estado, PDO::PARAM_STR);
-        $consulta->bindValue(':codigo_pedido', $this->codigo_pedido, PDO::PARAM_STR);
-        $consulta->bindValue(':id_usuario', $this->id_usuario, PDO::PARAM_INT);
-        $consulta->bindValue(':id_producto', $this->id_producto, PDO::PARAM_INT);
+        $consulta->bindValue(':producto_estado', $obj->getProductoEstado(), PDO::PARAM_STR);
+        $consulta->bindValue(':codigo_pedido', $obj->getCodigoPedido(), PDO::PARAM_STR);
+        $consulta->bindValue(':id_usuario', $obj->getIdUsuario(), PDO::PARAM_INT);
+        $consulta->bindValue(':id_producto', $obj->getIdProducto(), PDO::PARAM_INT);
         $consulta->execute();
     }
 
@@ -89,73 +105,16 @@ class PedidoProducto{
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'PedidoProducto');
     }
     
-
-    static public function altaPedidoProducto($idMesa,$nombreCliente,$nombreProducto,$cantidadProducto)
+    public static function obtenerIdProductoCodigoPedido($id_producto, $codigo_pedido)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        #==============================PEDIDOS======================================
-        
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT id FROM pedidos WHERE id_mesa = :id_mesa");
-       
-        try
-        {
-            //echo $idMesa;
-            $consulta -> bindValue(':id_mesa', $idMesa, PDO::PARAM_STR);
-            $consulta -> execute();
-            $consulta -> setFetchMode(PDO::FETCH_CLASS,'Pedido');
-            $pedido = $consulta -> fetch();         
-            // $pedido = $consulta -> fetchObject('Pedido');
-            
-        }
-        catch(PDOException $e)
-        {
-            echo "Error al crear elemento: ".$e->getMessage();
-        }
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT codigo_pedido, id_producto, producto_estado, id_empleado FROM pedidos_productos WHERE codigo_pedido = :codigo_pedido AND id_producto= :id_producto");
+        $consulta->bindValue(':codigo_pedido', $codigo_pedido, PDO::PARAM_STR);
+        $consulta->bindValue(':id_producto', $id_producto, PDO::PARAM_INT);
 
-
-        #==============================PRODUCTOS======================================
-
-        $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT * FROM productos WHERE nombre_producto = :nombre_producto");
-
-       
-        try
-        {
-            $consulta = $pdo->prepare($query);
-            $consulta -> bindValue(':nombre_producto', $nombreProducto, PDO::PARAM_STR);
-            $consulta -> execute();
-            $consulta -> setFetchMode(PDO::FETCH_CLASS,'Producto');
-            $producto = $consulta -> fetch();
-        }
-        catch(PDOException $e)
-        {
-            echo "Error al crear elemento: ".$e->getMessage();
-        }       
-
-
-        #==============================Pedido Producto======================================
-        $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO servicio (id_mesa, nombre_cliente, nombre_producto, cantidad_producto, id_pedido, id_producto, precio_producto, sector_producto,estado_producto) 
-                                                                VALUES (:id_mesa, :nombre_cliente, :nombre_producto, :cantidad_producto, :id_pedido, :id_producto, :precio_producto, :sector_producto,'pendiente')");
-
-       
-        try
-        {
-            $consulta = $pdo->prepare($query);
-            $consulta -> bindValue(':id_mesa', $idMesa, PDO::PARAM_STR);
-            $consulta -> bindValue(':nombre_cliente', $nombreCliente, PDO::PARAM_STR);
-            $consulta -> bindValue(':nombre_producto', $nombreProducto, PDO::PARAM_STR);
-            $consulta -> bindValue(':cantidad_producto', $cantidadProducto, PDO::PARAM_INT);
-            $consulta -> bindValue(':id_pedido', $pedido->getId(), PDO::PARAM_STR);
-            $consulta -> bindValue(':id_producto', $producto->getId(), PDO::PARAM_INT);
-            $consulta -> bindValue(':precio_producto', $producto->getPrecio(), PDO::PARAM_STR);
-            $consulta -> bindValue(':sector_producto', $producto->getSector(), PDO::PARAM_STR);
-
-            $consulta -> execute();
-        }
-        catch(PDOException $e)
-        {
-            echo "Error al crear elemento: ".$e->getMessage();
-        }
+        $consulta->execute();
+        return $consulta->fetchObject('PedidoProducto');
     }
+
+    
 }
