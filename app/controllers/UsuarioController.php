@@ -2,9 +2,16 @@
 
 include_once './models/Usuario.php';
 include_once './interfaces/IApiUsable.php';
+include_once './models/ArchivoPdf.php';
+
 
 class UsuarioController implements IApiUsable{
 
+
+    /*
+    * Se genera la carga del usuario
+    *
+    */
     public function Cargar($request, $response, $args)
     {   
         $parametros = $request->getParsedBody();
@@ -13,13 +20,13 @@ class UsuarioController implements IApiUsable{
         $clave = $parametros['clave'];
         $rol = $parametros['rol'];
 
-        var_dump($parametros);
 
         // Creamos el usuario
         $usr = new Usuario();
         $usr->usuario = $usuario;
         $usr->clave = $clave;
         $usr->rol = $rol;
+        $usr->setBaja(false);
         $usr->crearUsuario($usr);
 
         $payload = json_encode(array("mensaje" => "Usuario creado con exito"));
@@ -29,11 +36,15 @@ class UsuarioController implements IApiUsable{
           ->withHeader('Content-Type', 'application/json');
     }
 
+
+    /*
+    * Se modifica el usuario
+    *
+    */
     public static function Modificar($request, $response, $args)
     {
         $id = $args['id'];
         $usuario = Usuario::obtenerPorId($id);
-        var_dump($usuario);
 
         if($usuario != false)
         {
@@ -56,6 +67,10 @@ class UsuarioController implements IApiUsable{
           ->withHeader('Content-Type', 'application/json');
     }
 
+    /*
+    * Se realiza la baja logica del usuario.
+    *
+    */
     public static function Borrar($request, $response, $args)
     {
         $id = $args['id'];
@@ -72,7 +87,10 @@ class UsuarioController implements IApiUsable{
           ->withHeader('Content-Type', 'application/json');
     }
 
-
+    /*
+    * Se obtienen todos los usuarios
+    *
+    */
     public function TraerTodos($request, $response, $args)
     {
         $lista = Usuario::obtenerTodos();
@@ -83,6 +101,10 @@ class UsuarioController implements IApiUsable{
           ->withHeader('Content-Type', 'application/json');
     }
 
+    /*
+    * Se obtiene un usuario por nombre (usuario)
+    *
+    */
     public function TraerUno($request, $response, $args)
     {
         $usuario = $args['usuario'];
@@ -98,6 +120,10 @@ class UsuarioController implements IApiUsable{
         
     }
 
+    /*
+    * Se importa datos de usuarios en un archivo csv desde postman
+    *
+    */
     public static function Importar($request, $response, $args)
     {
         $archivo = $_FILES['archivo']['tmp_name'];
@@ -117,8 +143,11 @@ class UsuarioController implements IApiUsable{
                     $usuario->setFecha_alta($columnas[5]);
                     $usuario->setFecha_baja($columnas[6]);
 
-                    var_dump($usuario);
-                    Usuario::crearUsuario($usuario);
+                    $usuarioExistente = Usuario::obtenerUsuario($usuario->getUsuario());
+                    if(!$usuarioExistente){
+                        
+                        Usuario::crearUsuario($usuario);
+                    }
                 }
                 $primeraLinea = false;
             }
@@ -131,6 +160,10 @@ class UsuarioController implements IApiUsable{
         return $response->withHeader('Content-Type', 'application/json');
     }
 
+    /*
+    * Se exportan los datos de usuarios en un archivo csv 
+    *
+    */
     public static function Exportar($request, $response, $args)
     {
         $pathFile = "./Archivos";
@@ -154,14 +187,39 @@ class UsuarioController implements IApiUsable{
         }
 
         fclose($archivo);
+       // crearPdf('resto', $usuarios);
         
-        $payload = json_encode(array("mensaje"=> "Los usuarios se exportaron correctamente"));
-        $response->getBody()->write($payload);
-        return $response->withHeader('Content-Type', 'application/json');
+        $archivo = fopen($rutaCompleta, 'r');
+        $contenido = fread($archivo, filesize($rutaCompleta));
+        fclose($archivo);
+        
+        $response->getBody()->write($contenido);
+        return $response->withHeader('Content-Type', 'text/csv')
+        ->withHeader('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+        ->withHeader('Content-Length', strlen($contenido));
 
     }
 
 
+    public static function CrearPdf($response)
+    {
+        $titulo = 'Restaurante - La Comanda de Progra III';
+        $usuarios = Usuario::obtenerTodos();
+        crearPdf($titulo, $usuarios);
+
+        $archivo = __DIR__ . './Archivos/' . $titulo. '.pdf';
+        if(file_exists($archivo))
+        {
+            $payload = json_encode(array("mensaje" => "Se han importado los usuarios con exito"));
+        }
+        else{
+            
+            $payload = json_encode(array("mensaje" => "No se creo"));
+    
+        }
+        $response->getBody()->write($payload);        
+        return $response->withHeader('Content-Type', 'application/json');
+    }
 
     public static function LogIn($request, $response, $args)
     {
@@ -178,7 +236,7 @@ class UsuarioController implements IApiUsable{
       $response = $response->withHeader('Content-Type', 'application/json');
 
 
-      $payload = json_encode(array("mensaje" => "Usuario logueado correctamente, Token: ". $creacionToken));
+      $payload = json_encode(array("jwt" => $creacionToken));
   
       $response->getBody()->write($payload);
       return $response

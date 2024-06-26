@@ -6,7 +6,6 @@ class Producto{
     public $nombre;
     public $sector;
     public $precio;
-    public $tiempo_estimado;
 
 
     public function __construct(){}
@@ -40,10 +39,7 @@ class Producto{
         }
     }
 
-    public function getTiempoEstimado()
-    {
-        return $this->tiempo_estimado;
-    }
+    
 
     public function setNombre($nombre)
     {
@@ -54,11 +50,7 @@ class Producto{
     {
         $this->precio = $precio;
     }
-    public function setTiempoEstimado($tiempoEstimado)
-    {
-        $this->tiempo_estimado = $tiempoEstimado;
-    }
-
+    
     public function validarSector($sector)
     {
         if($sector != 'cerveceria' && $sector != 'cocina' && $sector != 'candybar'){
@@ -69,7 +61,10 @@ class Producto{
 
     public function validarSectorRol($rol)
     {
-        if ($this->getSector() == 'cerveceria' && $rol == 'bartender'){
+        if ($this->getSector() == 'cerveceria' && $rol == 'cervecero'){
+            return true;
+        }
+        else if ($this->getSector() == 'bar' && $rol == 'bartender'){
             return true;
         }
         else if ($this->getSector() == 'cocina' && $rol == 'cocinero'){
@@ -84,25 +79,45 @@ class Producto{
             return false;
         }
     }
-
+    
     public function crearProducto()
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO Productos (nombre, sector, precio, tiempo_estimado) VALUES (:nombre, :sector, :precio, :tiempo_estimado)");
+        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO Productos (nombre, sector, precio) VALUES (:nombre, :sector, :precio)");
         $consulta->bindValue(':nombre', $this->nombre, PDO::PARAM_STR);
         $consulta->bindValue(':sector', $this->sector, PDO::PARAM_STR);
         $consulta->bindValue(':precio', $this->precio, PDO::PARAM_STR);
-        $consulta->bindValue(':tiempo_estimado', $this->tiempo_estimado, PDO::PARAM_STR);
-
+        
         $consulta->execute();
-
+        
         return $objAccesoDatos->obtenerUltimoId();
     }
+    
+    public static function modificarProducto($producto)
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("UPDATE productos SET nombre = :nombre, sector = :sector, precio = :precio
+                                                     WHERE id = :id");
+        $consulta->bindValue(':nombre', $producto->getNombre(), PDO::PARAM_STR);
+        $consulta->bindValue(':sector', $producto->getSector(), PDO::PARAM_STR);
+        $consulta->bindValue(':id', $producto->getId(), PDO::PARAM_INT);
+        $consulta->bindValue(':precio', $producto->getPrecio());
+        $consulta->execute();
+    }
 
+    public static function borrarProducto($producto)
+    {
+        $objAccesoDatos = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDatos->prepararConsulta("DELETE FROM productos WHERE id = :id");
+        $consulta->bindValue(':id', $producto->getId(), PDO::PARAM_STR);
+        $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Mesa');
+        
+    }
     public static function obtenerTodos()
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio, tiempo_estimado FROM Productos");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio FROM Productos");
         $consulta->execute();
 
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Producto');
@@ -111,7 +126,7 @@ class Producto{
     public static function obtenerPorNombre($producto)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio, tiempo_estimado FROM Productos WHERE nombre = :nombre");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio FROM productos WHERE nombre = :nombre");
         $consulta->bindValue(':nombre', $producto, PDO::PARAM_STR);
         $consulta->execute();
 
@@ -121,25 +136,22 @@ class Producto{
     public static function obtenerPorId($id)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio, tiempo_estimado FROM Productos WHERE id = :id");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, nombre, sector, precio FROM productos WHERE id = :id");
         $consulta->bindValue(':id', $id, PDO::PARAM_INT);
         $consulta->execute();
 
         return $consulta->fetchObject('Producto');
     }
 
-
-    public static function modificarProducto($producto)
+    public static function obtenerProductoEntregadoTarde()
     {
-        $objAccesoDato = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDato->prepararConsulta("UPDATE productos SET nombre = :nombre, sector = :sector, precio = :precio, 
-                                                    tiempo_estimado = :tiempo_estimado WHERE id = :id");
-        $consulta->bindValue(':nombre', $producto->getNombre(), PDO::PARAM_STR);
-        $consulta->bindValue(':sector', $producto->getSector(), PDO::PARAM_STR);
-        $consulta->bindValue(':id', $producto->getId(), PDO::PARAM_INT);
-        $consulta->bindValue(':precio', $producto->getPrecio());
-        $consulta->bindValue(':tiempo_estimado', $producto->getTiempoEstimado());
+        $objAccesoDatos = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT tiempo_pedido.id_pedido_producto, pedidos_productos.nombre_producto
+                                                    FROM tiempo_pedido
+                                                    INNER JOIN pedidos_productos ON tiempo_pedido.id_pedido_producto = pedidos_productos.id
+                                                    WHERE tiempo_pedido.entrega_tarde = 1");
         $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
     }
 
 

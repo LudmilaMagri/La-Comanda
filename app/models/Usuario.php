@@ -110,13 +110,12 @@ public function getId() {
     public static function crearUsuario($usuario)
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO Usuarios (usuario, clave, rol, baja, fecha_alta) VALUES (:usuario, :clave, :rol, :baja, :fecha_alta)");
+        $consulta = $objAccesoDatos->prepararConsulta("INSERT INTO Usuarios (usuario, clave, rol, baja) VALUES (:usuario, :clave, :rol, :baja)");
         $claveHash = password_hash($usuario->getClave(), PASSWORD_DEFAULT);
         $consulta->bindValue(':usuario', $usuario->getUsuario(), PDO::PARAM_STR);
-        $consulta->bindValue(':clave', $usuario->getClave());
+        $consulta->bindValue(':clave', $claveHash);
         $consulta->bindValue(':rol', $usuario->getRol(), PDO::PARAM_STR);
         $consulta->bindValue(':baja', $usuario->getBaja(), PDO::PARAM_BOOL);
-        $consulta->bindValue(':fecha_alta', $usuario->getFecha_alta());
         $consulta->execute();
 
         return $objAccesoDatos->obtenerUltimoId();
@@ -125,7 +124,7 @@ public function getId() {
     public static function obtenerTodos()
     {
         $objAccesoDatos = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, usuario, clave, rol, baja, fecha_alta, fecha_baja FROM usuarios");
+        $consulta = $objAccesoDatos->prepararConsulta("SELECT id, usuario, rol, baja, fecha_alta, fecha_baja FROM usuarios");
         $consulta->execute();
 
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Usuario');
@@ -137,8 +136,6 @@ public function getId() {
         $consulta = $objAccesoDatos->prepararConsulta("SELECT id, usuario, clave, rol, baja, fecha_alta, fecha_baja FROM usuarios WHERE usuario = :usuario");
         $consulta->bindValue(':usuario', $usuario, PDO::PARAM_STR);
         $consulta->execute();
-
-        echo (random_bytes(5));
 
         return $consulta->fetchObject('Usuario');
     }
@@ -191,14 +188,69 @@ public function getId() {
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Usuario');
     }
 
-    public static function obtenerPorClave($usuario, $clave)
+    public static function obtenerPorClave($usuario)
     {
         $objAccesoDato = AccesoDatos::obtenerInstancia();
-        $consulta = $objAccesoDato->prepararConsulta("SELECT id, usuario, clave, rol FROM usuarios WHERE clave = :clave AND usuario = :usuario");
+        $consulta = $objAccesoDato->prepararConsulta("SELECT id, usuario, clave, rol FROM usuarios WHERE usuario = :usuario");
         $consulta->bindValue(':usuario', $usuario, PDO::PARAM_STR);
-        $consulta->bindValue(':clave', $clave, PDO::PARAM_STR);
         $consulta->execute();
         return $consulta->fetchObject('Usuario');
     }
+
+    
+    public static function obtenerCantidadOperacionesRol($rol)
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("SELECT usuarios.rol, COUNT(ingresos.id_usuario) AS cantidad_operaciones 
+                                                    FROM ingresos
+                                                    INNER JOIN usuarios ON ingresos.id_usuario = usuarios.id 
+                                                    WHERE usuarios.rol = :rol 
+                                                    GROUP BY usuarios.rol DESC ");
+        $consulta->bindValue(':rol', $rol, PDO::PARAM_STR);
+        $consulta->execute();
+        return $consulta->fetch(PDO::FETCH_ASSOC)['cantidad_operaciones'];
+    }
+
+    public static function obtenerCantidadOperacionesPorRolUsuario($rol, $nombreUsuario)
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("SELECT usuarios.rol, usuarios.usuario, COUNT(ingresos.id_usuario) AS cantidad_operaciones 
+                                                        FROM ingresos
+                                                        INNER JOIN usuarios ON ingresos.id_usuario = usuarios.id 
+                                                        WHERE usuarios.rol = :rol 
+                                                        AND usuarios.usuario = :nombreUsuario
+                                                        GROUP BY usuarios.rol DESC ");  
+        $consulta->bindValue(':rol', $rol, PDO::PARAM_STR);
+        $consulta->bindValue(':nombreUsuario', $nombreUsuario, PDO::PARAM_STR);
+        $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function obtenerCantidadOperacionesPorSeparado()
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("SELECT usuarios.rol, usuarios.usuario, COUNT(ingresos.id_usuario) AS cantidad_operaciones 
+                                                        FROM ingresos
+                                                        INNER JOIN usuarios ON ingresos.id_usuario = usuarios.id 
+                                                        GROUP BY usuarios.id
+                                                        ORDER BY cantidad_operaciones DESC ");  
+       // $consulta->bindValue(':rol', $rol, PDO::PARAM_STR);
+        //$consulta->bindValue(':nombreUsuario', $nombreUsuario, PDO::PARAM_STR);
+        $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public static function obtenerOperacionesPorRol($rol)
+    {
+        $objAccesoDato = AccesoDatos::obtenerInstancia();
+        $consulta = $objAccesoDato->prepararConsulta("SELECT fecha, rol
+                                                    FROM ingresos
+                                                    WHERE rol = :rol 
+                                                    AND tipo_operacion = 'Login'");
+        $consulta->bindValue(':rol', $rol, PDO::PARAM_STR);
+        $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 }
 

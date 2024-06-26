@@ -1,7 +1,6 @@
 id,rol,nombre,clave,baja,fecha_alta,fecha_baja
-1,clemen,$2y$10$3ibJI0zHKS0EO12lfD1Q..S3tNaIJd3QmPdzK7yE.BE,cocinero,0,,
-2,joni,$2y$10$NAbJPTmaPn.jlV13OR71Yul7iuYdQXOTb7oCrTKuHSz,bartender,0,,
-3,lud,$2y$10$5sEtGcav704z6cHxOSlBEeMDJFhTcrVpiIagOn4BSor,socio,0,,
-4,lud,1234,mozo,0,,
-5,juan,1234,socio,0,,
-6,juana,1234,cocinero,0,,
+63,lud,,socio,0,2024-06-25,
+64,sofi,,mozo,0,2024-06-25,
+65,fede,,bartender,0,2024-06-25,
+66,juan,,cervecero,0,2024-06-25,
+67,pepe,,cocinero,0,2024-06-25,

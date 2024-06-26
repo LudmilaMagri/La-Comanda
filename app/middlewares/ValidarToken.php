@@ -18,6 +18,7 @@ class ValidarToken{
           $payload = AutentificadorJWT::ObtenerData($token);
           if($payload->rol == 'socio'){
               
+              $request = $request->withAttribute('userData', $payload);
               $response = $handler->handle($request);
           }
           else{
@@ -40,7 +41,8 @@ class ValidarToken{
           $payload = AutentificadorJWT::ObtenerData($token);
           if($payload->rol == 'mozo'){
               
-              $response = $handler->handle($request);
+            $request = $request->withAttribute('userData', $payload);
+            $response = $handler->handle($request);
           }
           else{
             $response->getBody()->write(json_encode(array('Error' => "Accion solo para los mozos")));
@@ -61,7 +63,8 @@ class ValidarToken{
         try{
           $payload = AutentificadorJWT::ObtenerData($token);
           if($payload->rol == 'cocinero'){
-              
+            
+              $request = $request->withAttribute('userData', $payload);
               $response = $handler->handle($request);
           }
           else{

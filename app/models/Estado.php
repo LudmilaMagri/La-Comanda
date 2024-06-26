@@ -9,9 +9,9 @@
         const ENTREGADO = 'entregado';
         
         //Estados de la mesa
-        const ESPERANDO = 'Con cliente esperando pedido';
-        const COMIENDO = 'Con cliente comiendo';
-        const PAGANDO = 'Con cliente pagando';
+        const ESPERANDO = 'con cliente esperando pedido';
+        const COMIENDO = 'con cliente comiendo';
+        const PAGANDO = 'con cliente pagando';
         const CERRADA = 'cerrada';
 
     }
